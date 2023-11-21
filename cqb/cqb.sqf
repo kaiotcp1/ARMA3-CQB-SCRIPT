@@ -2,11 +2,9 @@
 // by Zenophon
 // GIT >>
 
-
 _grupoSoldadosObjeto = nil; // Inicializa a variável de controle do grupo
 _enableScript = true;
-
-
+_randomMarkerNumber = floor(random 10000); // Gera um número aleatório entre 0 e 10000
 
 while { _enableScript } do {
 	private ["_triggerName", "_securityLocal", "_ammoBox"];
@@ -19,7 +17,7 @@ while { _enableScript } do {
 	_securityLocation = _securityLocal;
 	_playersInRange = [];
 
-     if (!_enableScript) exitWith {};
+	if (!_enableScript) exitWith {};
 
 	// Verificar se pelo menos um jogador está a menos de 600 metros de distância do _triggerPos
 	{
@@ -35,7 +33,10 @@ while { _enableScript } do {
 		// spawn do grupo diretamente e obter o objeto do grupo
 		_grupoSoldadosObjeto = [_securityLocation, WEST, ["rhsgref_cdf_b_reg_squadleader", "rhsgref_cdf_b_reg_grenadier_rpg",
 			"rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner",
-		"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner"],
+			"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner",
+			"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner",
+			"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner",
+		"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_machinegunner"],
 	[], [], [], [], [], 230] call BIS_fnc_spawnGroup;
 
 	_grupoSoldadosObjeto deleteGroupWhenEmpty true;
@@ -45,7 +46,7 @@ while { _enableScript } do {
 		_soldado = _x;
 		_soldado setPosATL _triggerPos;
 		_soldado allowDamage false;
-        sleep 1;
+		sleep 1;
 	} forEach units _grupoSoldadosObjeto;
 
 	sleep 2;
@@ -56,11 +57,17 @@ while { _enableScript } do {
 	} forEach units _grupoSoldadosObjeto;
 
 	sleep 1;
-	[_grupoSoldadosObjeto, _triggerPos] execVM "\x\cba\addons\ai\fnc_waypointGarrison.sqf";
+
+	// [_grupoSoldadosObjeto] call CBA_fnc_searchNearby;
+	[_grupoSoldadosObjeto, _triggerPos, 300, 7, "MOVE", "AWARE", "YELLOW", "FULL", "STAG COLUMN", "this call CBA_fnc_searchNearby", [3, 6, 9]] call CBA_fnc_taskPatrol;
+
+	// [(_grupoSoldadosObjeto), [_triggerPos, 200, 200, 0, false]] call CBA_fnc_taskSearchArea;
+
+	// [_grupoSoldadosObjeto, _triggerPos] execVM "\x\cba\addons\ai\fnc_waypointGarrison.sqf";
 } else {
 	// Se o grupo já foi gerado ou não há jogadores dentro da faixa
 	_totalGrupos = count allGroups;
-    hint format ["Total de grupos no mapa: %1", _totalGrupos];
+	hint format ["Total de grupos no mapa: %1", _totalGrupos];
 };
 
 if (player distance _triggerPos > 600 && !isNil "_grupoSoldadosObjeto") then {
@@ -78,16 +85,23 @@ if (player distance _triggerPos > 600 && !isNil "_grupoSoldadosObjeto") then {
 		} count units _grupoSoldadosObjeto == 0
 	};
 
-     // Deletar o grupo após deletar todos os membros
+	     // Deletar o grupo após deletar todos os membros
 	deleteGroup _grupoSoldadosObjeto;
 };
 
+
 if (!alive _ammoBox) then {
-		deleteVehicle _triggerName;
-		hint "Trigger deletado com sucesso";
-        _marker1 = ["markername1", _triggerPos, "ELLIPSE", [600, 600], "COLOR:", "ColorGreen", "PERSIST", "GRID"] call CBA_fnc_createMarker;
-        _enableScript = false;
-	};
+	_localMarkerName = format ["markername%1", _randomMarkerNumber];
+	_MarkerComplete = createMarker[_localMarkerName, _triggerPos];
+	_localMarkerName setMarkerSize [600, 600];
+	_localMarkerName setMarkerText "Safe Area";
+	_localMarkerName setMarkerShape "ELLIPSE";
+	_localMarkerName setMarkerBrush "Grid";
+	_localMarkerName setMarkerColor "ColorGreen";
+	deleteVehicle _triggerName;
+	hint "Trigger deletado com sucesso";
+	_enableScript = false;
+};
 
 sleep 10;
 }
