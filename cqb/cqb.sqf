@@ -42,19 +42,19 @@ while { _enableScript } do {
 	if (count _playersInRange > 0 && count _gruposAtivos == 0) then {
 		// Iterar sobre as arrays para criar os grupos
 		{
-			// _grupoInfo é array...
+			// _grupoInfo array...
 			_grupoInfo = _x;
 			_grupo = _grupoInfo call BIS_fnc_spawnGroup;
 			_grupo deleteGroupWhenEmpty true;
 
-			            // Armazenar o grupo na variável de controle
+			// Armazenar o grupo na variável de controle
 			_gruposAtivos pushBack _grupo;
 
-			            // Iterar pelos membros do grupo e definir a posição de cada um
+			// Iterar pelos membros do grupo e definir a posição de cada um
 			{
 				_soldado = _x;
-				_soldado setPosATL _triggerPos;
 				_soldado allowDamage false;
+				_soldado setPosATL _triggerPos;
 				sleep 1;
 				_soldado allowDamage true;
 			} forEach units _grupo;
@@ -62,16 +62,39 @@ while { _enableScript } do {
 
 		sleep 2;
 
-		        // Configurar waypoints para os grupos ativos
-		{
-			_grupo = _x;
-			sleep 2;
-			[_grupo, [_triggerPos, 200, 200, 0, false]] call CBA_fnc_taskSearchArea;
-		} forEach _gruposAtivos;
+		// Configurar waypoints para os grupos ativos
+		// Se desejar configurar waypoints diferentes para cada grupo, ajuste conforme necessário.
 
-		        // Se desejar configurar waypoints diferentes para cada grupo, ajuste conforme necessário.
+		for "_i" from 0 to (count _gruposAtivos) do {
+    		_grupoObject = _gruposAtivos select _i;
+			_grupoIndex = _i + 1;
+			switch (_i) do {
+				case 0:
+				{
+				[_grupoObject, _triggerPos, 600, 3, true, false] call CBA_fnc_taskDefend;
+					sleep 1;
+					hintC "Task Patrol ativado";
+				};
+				case 1: 
+				{
+				[_grupoObject, _triggerPos, 300, 3, true, false] call CBA_fnc_taskDefend;
+					sleep 1;
+					hintC "TaskSarchArea ativado";
+
+				};
+				case 2: {
+				[_grupoObject, _triggerPos, 80, 3, true, false] call CBA_fnc_taskDefend;
+					sleep 1;
+					hintC "Garrison ativado";
+
+				};
+			};
+
+		};
+
 	};
 
+	//Debug
 	_totalGrupos = count allGroups;
 	hint format ["Total de grupos no mapa: %1", _totalGrupos];
 
@@ -115,5 +138,6 @@ while { _enableScript } do {
 		_enableScript = false;
 	};
 
+	// Ativação do script a cada 10s..
 	sleep 10;
 };
