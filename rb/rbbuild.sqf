@@ -6,6 +6,8 @@ _obj = [];
 _roadBlocksAtivos = [];
 _pos = [];
 _direction = [];
+_playerName = [];
+_roadBlocksObject = [];
 
 _objectsArray = [
 	["RoadCone_F", [3.45947, -0.1698, 0], 0, 1, 0, [0, 0], "", "", true, false],
@@ -42,17 +44,16 @@ while { true } do {
 
 	{
 		_markerObj = _x;
-		_markerName = _markerObj;
-		_counterArray = [count _markerObj];
-		_markerPos = getMarkerPos _markerObj;
-		_nearRoads = _markerPos nearRoads 10;
-		_roadBlocksObject = [];
+		hint format ["Marcador do forEach principal: %1", _markerObj];
+		sleep 3;
 
-		{
-			if (player distance _markerPos < 20) then {
-				_playersInRange pushBack _x;
-			}
-		} forEach allPlayers;
+		_markerName = _markerObj;
+		hint format ["Hint do _markerName: %1", _markerName];
+		sleep 3;
+
+		_counterArray = [count _markerObj];
+		_markerPos = getMarkerPos _markerName;
+		_nearRoads = _markerPos nearRoads 10;
 
 		if (count _nearRoads > 0) then {
 			_road = _nearRoads select 0;
@@ -62,59 +63,72 @@ while { true } do {
 			_pos = (getPos _road);
 		};
 
-		if (count _playersInRange > 0 && !(_markerName in _roadBlocksAtivos)) then {
-			{
-				_roadBlock = _x;
-				// Cria o roadblock
-				_obj = [_pos, _direction, _objectsArray, 0] call BIS_fnc_objectsMapper;
+		if (player distance _markerPos < 20) then {
+			_playersInRange pushBackUnique name player;
+			hint format ["PlayersInRange : %1", _playersInRange];
+			sleep 3;
 
-				/* 
-					Itera sobre os objetos gerados e define enableSimulation como false
-				*/
+			if (count _playersInRange >= 1 && !(_markerName in _roadBlocksAtivos)) then {
 				{
-					_object = _x;
-					_object enableSimulation false;
-				} forEach _obj;
+					_obj = [_pos, _direction, _objectsArray, 0] call BIS_fnc_objectsMapper;
 
-				// Armazena o roadblock apenas se nome do marker não estiver presente em _roadBlocksAtivos
-				if (!(_markerName in _roadBlocksAtivos)) then {
+					{
+						_object = _x;
+						_object enableSimulation false;
+					} forEach _obj;
+
+					                   // _roadBlocksAtivos pushBackUnique _roadBlockName;
 					_roadBlocksAtivos pushBackUnique _markerName;
 					_roadBlocksObject pushBack _obj;
-				};
 
-				{
-					_normal = surfaceNormal (position _x);
-					_x setVectorUp _normal;
-				} forEach _obj;
-			} forEach _counterArray;
+					{
+						_normal = surfaceNormal (position _x);
+						_x setVectorUp _normal;
+					} forEach _obj;
+				} forEach allPlayers;
+			}
 		};
 
-		// Limpa array de jogadores que estão na distância fornecida...
-		_playersInRange = [];
+		hint format ["Nome do RoadBlockAtivo: %1", _roadBlocksAtivos];
 
+		        // Limpa array de jogadores que estão na distância fornecida...
 		{
-			_markerName3 = _x;
-			_markerPos = getMarkerPos _markerName3;
-            hint format ["Nome do Marcador: %1", _markerName3];
-			if (player distance _markerPos > 30) then {
-				hint "Jogador está a 40 ou mais metros do marcador";
+			_activeMarker = _x;
+			_markerNameForDelete = _activeMarker;
+			_activeMarkerPos = getMarkerPos _markerNameForDelete;
+			hint format ["Nome do activeMarker: %1", _activeMarker];
+			sleep 3;
+
+			if (player distance _activeMarkerPos > 20) then {
 				{
-					_object = _x;
-					hint format ["Tentando deletar objeto: %1", _obj];
-					deleteVehicle _object;
-					_roadBlocksAtivos = _roadBlocksAtivos - [_markerName3];
-					hint format ["Nome do Marcador Ativo: %1", _roadBlocksAtivos];
-				} forEach _obj;
+					_objects = _x;
+					{
+						_object = _x;
+						_objectForDelete = _object;
+						hint format ["Deletando objetos: %1", _object];
+						sleep 0.7;
+						deleteVehicle _objectForDelete;
+					} forEach _objects;
+				} forEach _roadBlocksObject;
+
+				_roadBlocksAtivos = _roadBlocksAtivos - [_activeMarker];
+				hint format ["Nome do Marcador Ativo após a deleção: %1", _roadBlocksAtivos];
 			};
 
+			                // Limpar array de nomes de player dentro da área apenas quando a condição é verdadeira
+			_playersInRange = [];
 		} forEach _roadBlocksAtivos;
-
 	} forEach _markerArray;
-	//hint "Final do loop";
+
 	sleep 3;
 };
+
 /*
 	hint format ["Após a deleção são: %1", _roadBlocksAtivos];
-					hint format ["Roadblocks Ativos são: %1", _roadBlocksAtivos];
-					hint format ["Tentando deletar objeto: %1", _obj];
-					*/
+	hint format ["Roadblocks Ativos são: %1", _roadBlocksAtivos];
+	hint format ["Tentando deletar objeto: %1", _obj];
+	hint format ["Tentando deletar objeto: %1", _obj];
+	hint format ["Nome do Marcador: %1", _markerName3];
+	
+	
+*/
