@@ -1,13 +1,10 @@
 params ["_markerArray"];
 
 _enableScript = true;
-_playersInRange = [];
 _obj = [];
 _roadBlocksAtivos = [];
 _pos = [];
 _direction = [];
-_playerName = [];
-_roadBlocksObject = [];
 
 _objectsArray = [
 	["RoadCone_F", [3.45947, -0.1698, 0], 0, 1, 0, [0, 0], "", "", true, false],
@@ -16,11 +13,10 @@ _objectsArray = [
 	["Land_PortableLight_double_F", [4.94238, 1.55298, 0], 154.789, 1, 0, [0, -0], "", "", true, false],
 	["RoadCone_F", [-4.56006, 3.81567, 0], 0, 1, 0, [0, 0], "", "", true, false],
 	["RoadCone_F", [3.52002, -6.10803, 0], 0, 1, 0, [0, 0], "", "", true, false],
-	["Land_CampingTable_F", [6.77002, -3.15601, 0], 270, 1, 0, [0, 0], "", "", true, false],
+	["Land_BagFence_Round_F", [5.77002, -3.15601, 0], 120, 1, 0, [0, 0], "", "", true, false],
+	["RHS_M2StaticMG_D", [7.85693, -2.79688, 0], -120, 1, 0, [0, 0], "", "", true, false],
 	["RoadCone_F", [-4.58105, -6.12061, 0], 0, 1, 0, [0, 0], "", "", true, false],
 	["Land_PaperBox_open_empty_F", [7.8208, 2.51733, 0], 0, 1, 0, [0, 0], "", "", true, false],
-	["Land_CampingChair_V2_F", [7.85693, -2.79688, 0], 67.7096, 1, 0, [0, 0], "", "", true, false],
-	["Land_CampingChair_V2_F", [7.87891, -3.77124, 0], 90.5561, 1, 0, [0, -0], "", "", true, false],
 	["Land_PortableLight_double_F", [-7.86035, -4.21399, 0], 264.639, 1, 0, [0, 0], "", "", true, false],
 	["Land_BagBunker_01_small_green_F", [-8.5293, -0.577515, 0], 269.269, 1, 0, [0, 0], "", "", true, false],
 	["CamoNet_ghex_F", [9.27197, -1.02222, 0], 87.0908, 1, 0, [0, 0], "", "", true, false],
@@ -36,24 +32,25 @@ _objectsArray = [
 	["Land_Razorwire_F", [-10.5132, -9.08655, -2.38419e-006], 0, 1, 0, [0, 0], "", "", true, false],
 	["RoadCone_F", [-4.53076, -12.1653, 0], 0, 1, 0, [0, 0], "", "", true, false],
 	["Land_PortableLight_double_F", [-12.6196, -4.11023, 0], 329.004, 1, 0, [0, 0], "", "", true, false],
-	["Land_BagFence_01_long_green_F", [-14.2725, -0.586914, -0.000999928], 90, 1, 0, [0, -0], "", "", true, false]
+	["RHS_TOW_TriPod_USMC_D", [-14.2725, -0.586914, -0.000999928], 90, 1, 0, [0, -0], "", "", true, false]
 ];
 
 while { true } do {
-	if (!_enableScript) exitWith {};
+	// if (!_enableScript) exitWith {};
 
 	{
 		_markerObj = _x;
-		hint format ["Marcador do forEach principal: %1", _markerObj];
-		sleep 3;
+		//hint format ["Marcador do forEach principal: %1", _markerObj];
+		//sleep 3;
 
 		_markerName = _markerObj;
-		hint format ["Hint do _markerName: %1", _markerName];
-		sleep 3;
+		//hint format ["Hint do _markerName: %1", _markerName];
+		//sleep 3;
 
 		_counterArray = [count _markerObj];
 		_markerPos = getMarkerPos _markerName;
 		_nearRoads = _markerPos nearRoads 10;
+
 
 		if (count _nearRoads > 0) then {
 			_road = _nearRoads select 0;
@@ -63,72 +60,82 @@ while { true } do {
 			_pos = (getPos _road);
 		};
 
-		if (player distance _markerPos < 20) then {
-			_playersInRange pushBackUnique name player;
-			hint format ["PlayersInRange : %1", _playersInRange];
-			sleep 3;
+		if (player distance _markerPos < 400) then {
+			// _playersInRange pushBackUnique name player;
+			// hint format ["PlayersInRange : %1", _playersInRange];
 
-			if (count _playersInRange >= 1 && !(_markerName in _roadBlocksAtivos)) then {
+			_alreadyExists = false;
+
+			{
+				if (_markerName == (_x select 0)) then {
+					_alreadyExists = true;
+				};
+			} forEach _roadBlocksAtivos;
+
+			if (!_alreadyExists) then {
+				_obj = [_pos, _direction, _objectsArray, 0] call BIS_fnc_objectsMapper;
+
+				_grupoSoldadosObjeto = [_markerPos, WEST, ["rhsgref_cdf_b_reg_grenadier_rpg",
+					"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_grenadier_rpg",
+					"rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_specialist_aa",
+				"rhsgref_cdf_b_reg_specialist_aa"], [], [], [], [], [], 0] call BIS_fnc_spawnGroup;
+
+				sleep 3;
+				[_grupoSoldadosObjeto, _markerPos] call BIS_fnc_taskDefend;
+
 				{
-					_obj = [_pos, _direction, _objectsArray, 0] call BIS_fnc_objectsMapper;
-
 					{
 						_object = _x;
-						_object enableSimulation false;
+
+						    // Verifica se o objeto é do tipo RHS_TOW_TriPod_USMC_D
+						if (typeOf _object isEqualTo "RHS_TOW_TriPod_USMC_D") then {
+							// Se for, deixe enableSimulation true
+							_object enableSimulation true;
+							_normal = surfaceNormal (position _object);
+							_object setVectorUp _normal;
+						} else {
+							// Se não for, deixe enableSimulation false
+							_object enableSimulation false;
+
+							        // Além disso, ajuste a orientação do objeto
+							_normal = surfaceNormal (position _object);
+							_object setVectorUp _normal;
+						}
 					} forEach _obj;
 
-					                   // _roadBlocksAtivos pushBackUnique _roadBlockName;
-					_roadBlocksAtivos pushBackUnique _markerName;
-					_roadBlocksObject pushBack _obj;
-
-					{
-						_normal = surfaceNormal (position _x);
-						_x setVectorUp _normal;
-					} forEach _obj;
+					_roadBlocksAtivos pushBackUnique [_markerName, _grupoSoldadosObjeto, _obj];
+					//hint format ["Debug --- Array com 2 valores: %1", _roadBlocksAtivos];
+					//sleep 3;
 				} forEach allPlayers;
-			}
+			};
 		};
 
-		hint format ["Nome do RoadBlockAtivo: %1", _roadBlocksAtivos];
+		
+
+		{
+			_roadBlockInfo = _x;
+			_markerNameForDelete = _roadBlockInfo select 0;
+			_grupoSoldadosForVerify = _roadBlockInfo select 1;
+			_objectForDelete = _roadBlockInfo select 2;
+
+			{
+				_soldierForVerify = _x;
+				if (!alive _soldierForVerify) then {
+					deleteGroup _grupoSoldadosForVerify;
+					deleteMarker _markerNameForDelete;
+					{
+						_objectInfo = _x;
+						deleteVehicle _objectInfo;
+					} forEach _objectForDelete;
+					_roadBlocksAtivos = _roadBlocksAtivos - [_roadBlockInfo];
+				};
+			} forEach units _grupoSoldadosForVerify;
+		} forEach _roadBlocksAtivos;
+
+		//hint format ["Nome do RoadBlockAtivo: %1", _roadBlocksAtivos];
 
 		        // Limpa array de jogadores que estão na distância fornecida...
-		{
-			_activeMarker = _x;
-			_markerNameForDelete = _activeMarker;
-			_activeMarkerPos = getMarkerPos _markerNameForDelete;
-			hint format ["Nome do activeMarker: %1", _activeMarker];
-			sleep 3;
-
-			if (player distance _activeMarkerPos > 20) then {
-				{
-					_objects = _x;
-					{
-						_object = _x;
-						_objectForDelete = _object;
-						hint format ["Deletando objetos: %1", _object];
-						sleep 0.7;
-						deleteVehicle _objectForDelete;
-					} forEach _objects;
-				} forEach _roadBlocksObject;
-
-				_roadBlocksAtivos = _roadBlocksAtivos - [_activeMarker];
-				hint format ["Nome do Marcador Ativo após a deleção: %1", _roadBlocksAtivos];
-			};
-
-			                // Limpar array de nomes de player dentro da área apenas quando a condição é verdadeira
-			_playersInRange = [];
-		} forEach _roadBlocksAtivos;
 	} forEach _markerArray;
 
 	sleep 3;
 };
-
-/*
-	hint format ["Após a deleção são: %1", _roadBlocksAtivos];
-	hint format ["Roadblocks Ativos são: %1", _roadBlocksAtivos];
-	hint format ["Tentando deletar objeto: %1", _obj];
-	hint format ["Tentando deletar objeto: %1", _obj];
-	hint format ["Nome do Marcador: %1", _markerName3];
-	
-	
-*/
