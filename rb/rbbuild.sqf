@@ -5,6 +5,8 @@ _obj = [];
 _roadBlocksAtivos = [];
 _pos = [];
 _direction = [];
+_triggerData = [];
+
 
 _objectsArray = [
 	["RoadCone_F", [3.45947, -0.1698, 0], 0, 1, 0, [0, 0], "", "", true, false],
@@ -35,22 +37,26 @@ _objectsArray = [
 	["RHS_TOW_TriPod_USMC_D", [-14.2725, -0.586914, -0.000999928], 90, 1, 0, [0, -0], "", "", true, false]
 ];
 
-while { true } do {
-	// if (!_enableScript) exitWith {};
+{
+	_markerObj = _x;
+	_markerName = _markerObj;
+	_markerPos = getMarkerPos _markerName;
 
+	_trgRoadBlock = createTrigger ["EmptyDetector", _markerPos];
+	_trgRoadBlock setTriggerArea [100, 100, 0, false];
+	_trgRoadBlock setTriggerActivation ["ANY", "PRESENT", false];
+	_trgRoadBlock setTriggerStatements ["this", "hint 'trigger on'", "hint 'trigger off'"];
+
+	_triggerData pushBack [_markerName, _trgRoadBlock];
+} forEach _markerArray;
+
+while { true } do {
 	{
 		_markerObj = _x;
-		//hint format ["Marcador do forEach principal: %1", _markerObj];
-		//sleep 3;
-
 		_markerName = _markerObj;
-		//hint format ["Hint do _markerName: %1", _markerName];
-		//sleep 3;
-
 		_counterArray = [count _markerObj];
 		_markerPos = getMarkerPos _markerName;
 		_nearRoads = _markerPos nearRoads 10;
-
 
 		if (count _nearRoads > 0) then {
 			_road = _nearRoads select 0;
@@ -60,82 +66,72 @@ while { true } do {
 			_pos = (getPos _road);
 		};
 
-		if (player distance _markerPos < 400) then {
-			// _playersInRange pushBackUnique name player;
-			// hint format ["PlayersInRange : %1", _playersInRange];
+		hint format ["marName é: %1 e markerObj é: %2", _markerName, _markerObj];
 
-			_alreadyExists = false;
+		{
+			_triggerDataEntry = _x;
+			_markerObjTrigger = _triggerDataEntry select 0;
+			_trgRoadBlock = _triggerDataEntry select 1;
 
-			{
-				if (_markerName == (_x select 0)) then {
-					_alreadyExists = true;
-				};
-			} forEach _roadBlocksAtivos;
+			if (_markerName == _markerObjTrigger && triggerActivated _trgRoadBlock) then {
+				hint "Trigger ativado!";
+				sleep 3;
 
-			if (!_alreadyExists) then {
 				_obj = [_pos, _direction, _objectsArray, 0] call BIS_fnc_objectsMapper;
 
 				_grupoSoldadosObjeto = [_markerPos, WEST, ["rhsgref_cdf_b_reg_grenadier_rpg",
 					"rhsgref_cdf_b_reg_machinegunner", "rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_grenadier_rpg",
 					"rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_grenadier_rpg", "rhsgref_cdf_b_reg_specialist_aa",
 				"rhsgref_cdf_b_reg_specialist_aa"], [], [], [], [], [], 0] call BIS_fnc_spawnGroup;
+				                // Deleta o trigger após a ativação
+				deleteVehicle _trgRoadBlock;
+				_grupoSoldadosObjeto deleteGroupWhenEmpty true;
 
 				sleep 3;
 				[_grupoSoldadosObjeto, _markerPos] call BIS_fnc_taskDefend;
 
 				{
-					{
-						_object = _x;
+					_object = _x;
 
-						    // Verifica se o objeto é do tipo RHS_TOW_TriPod_USMC_D
-						if (typeOf _object isEqualTo "RHS_TOW_TriPod_USMC_D") then {
-							// Se for, deixe enableSimulation true
-							_object enableSimulation true;
-							_normal = surfaceNormal (position _object);
-							_object setVectorUp _normal;
-						} else {
-							// Se não for, deixe enableSimulation false
-							_object enableSimulation false;
+					if (typeOf _object isEqualTo "seu_tipo_de_objeto_aqui") then {
+						_object enableSimulation true;
+						_normal = surfaceNormal (position _object);
+						_object setVectorUp _normal;
+					} else {
+						_object enableSimulation false;
+						_normal = surfaceNormal (position _object);
+						_object setVectorUp _normal;
+					}
+				} forEach _obj;
 
-							        // Além disso, ajuste a orientação do objeto
-							_normal = surfaceNormal (position _object);
-							_object setVectorUp _normal;
-						}
-					} forEach _obj;
+				_roadBlocksAtivos pushBackUnique [_markerName, _grupoSoldadosObjeto, _obj];
+				hint format ["Debug --- Array com 2 valores: %1", _roadBlocksAtivos];
+				sleep 3;
+			}
+		} forEach _triggerData;
+	} forEach _markerArray;
 
-					_roadBlocksAtivos pushBackUnique [_markerName, _grupoSoldadosObjeto, _obj];
-					//hint format ["Debug --- Array com 2 valores: %1", _roadBlocksAtivos];
-					//sleep 3;
-				} forEach allPlayers;
-			};
-		};
-
-		
+	{
+		_roadBlockInfo = _x;
+		_markerNameForDelete = _roadBlockInfo select 0;
+		_grupoSoldadosForVerify = _roadBlockInfo select 1;
+		_objectForDelete = _roadBlockInfo select 2;
 
 		{
-			_roadBlockInfo = _x;
-			_markerNameForDelete = _roadBlockInfo select 0;
-			_grupoSoldadosForVerify = _roadBlockInfo select 1;
-			_objectForDelete = _roadBlockInfo select 2;
+			_soldierForVerify = _x;
+			if (!alive _soldierForVerify) then {
+				deleteGroup _grupoSoldadosForVerify;
+				deleteMarker _markerNameForDelete;
 
-			{
-				_soldierForVerify = _x;
-				if (!alive _soldierForVerify) then {
-					deleteGroup _grupoSoldadosForVerify;
-					deleteMarker _markerNameForDelete;
-					{
-						_objectInfo = _x;
-						deleteVehicle _objectInfo;
-					} forEach _objectForDelete;
-					_roadBlocksAtivos = _roadBlocksAtivos - [_roadBlockInfo];
-				};
-			} forEach units _grupoSoldadosForVerify;
-		} forEach _roadBlocksAtivos;
+				{
+					_objectInfo = _x;
+					deleteVehicle _objectInfo;
+				} forEach _objectForDelete;
 
-		//hint format ["Nome do RoadBlockAtivo: %1", _roadBlocksAtivos];
-
-		        // Limpa array de jogadores que estão na distância fornecida...
-	} forEach _markerArray;
+				_roadBlocksAtivos = _roadBlocksAtivos - [_roadBlockInfo];
+			};
+		} forEach units _grupoSoldadosForVerify;
+	} forEach _roadBlocksAtivos;
 
 	sleep 3;
 };
